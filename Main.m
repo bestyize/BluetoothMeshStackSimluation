@@ -2,9 +2,13 @@ clear;
 clc;
 global LIST_OF_MESH_NODE;
 global SYSTEM_TIME;
+global DEFAULT_RANGE;
+global REACH_NODE;
 
 LIST_OF_MESH_NODE=[];
 SYSTEM_TIME=0;
+DEFAULT_RANGE=15;
+REACH_NODE=[];
 
 
 
@@ -16,34 +20,27 @@ main();
 function main()
     global LIST_OF_MESH_NODE;
     global SYSTEM_TIME;
+    global REACH_NODE;
     
     srcId=3;
     dstId=45;
     packetNum=1;
     rate=50;%60p/s%
-    
-    
+
     buildNodeList();
     buildOneHopNeighborForEachNode();
+    %建立两跳邻居节点关系
+    %buildTwoHopNeighborForEachNode();
     
-    node=LIST_OF_MESH_NODE(1);
-    node.printSelfNeighbor();
+    DrawHelper.drawSrcAndDst(srcId,dstId);
+    pause(1);%先打印节点%
+    %printAvgNodeDegree();
     
-    
-    printAvgNodeDegree();
-    
-    simlulationTime=60*1000*1000;%仿真60秒%
+    simlulationTime=10*1000*1000;%仿真10秒%
     timestamp=0;
     nodeCount=numel(LIST_OF_MESH_NODE);
     
-    %(srcId,dstId,num,rate)%
-    
-
     packetSendEventHelper(srcId,dstId,packetNum,rate);
-    
-    node=LIST_OF_MESH_NODE(srcId);
-    node.printSelfNeighbor();
-    
     
     %系统开始运行%
     while timestamp<simlulationTime
@@ -84,13 +81,12 @@ function buildOneHopNeighborForEachNode()
     end
 end
 
-%打印每个节点的邻居节点数量%
-function printAvgNodeDegree()
+%建立两跳邻居节点%
+function buildTwoHopNeighborForEachNode()
     global LIST_OF_MESH_NODE;
     nodeCount=numel(LIST_OF_MESH_NODE);
-    for i=1:1:nodeCount
-        meshNode=LIST_OF_MESH_NODE(i);
-        meshNode.unicastAddr+":"+numel(meshNode.neighborList)
+    for k=1:1:nodeCount
+        LIST_OF_MESH_NODE(k).buildTwoHopNeighborList();
     end
 end
 

@@ -1,3 +1,6 @@
+clear;
+clc;
+
 % 
 % obj=TestObj(@eventHandler);
 % obj.eventHandler(123,1111)
@@ -35,9 +38,27 @@
 % b=[];
 % 
 % setdiff(b,a)
+% 
+% x=23140.6360815172;
+% 
+% int64(x)
+% 
+% global DEFAULT_RANGE;
+% 
+% DEFAULT_RANGE=15;
+% 
+% srcId=3;
+% dstId=45;
+% 
+% DrawHelper.drawSrcAndDst(srcId,dstId);
 
-x=23140.6360815172;
 
-int64(x)
+rrd=12123.123;
+
+a=floor(rrd)
+pause(10)
+unidrnd(a)
+
+
 
 

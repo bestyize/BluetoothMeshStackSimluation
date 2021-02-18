@@ -47,6 +47,10 @@ classdef NetworkPDU
             dst=[bi2de(dstBinary(1:8),'left-msb');bi2de(dstBinary(9:16),'left-msb')];
             networkPDU=[iviNID;ctlTTL;seq;src;dst;transportPDU;netMIC];
         end
+        
+        function [result]=toString(obj)
+            result=sprintf("ivi:%d,nid:%d,ctl:%d,ttl:%d,seq:%d,src:%d,dst:%d",obj.ivi,obj.nid,obj.ctl,obj.ttl,obj.seq,obj.src,obj.dst);
+        end
     end
     
     methods(Static)

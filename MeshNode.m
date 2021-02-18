@@ -5,6 +5,7 @@ classdef MeshNode < handle
         position;
         txPower;%noardcast power,relative to tx range%
         txRange;%覆盖的半径%
+        phyRate;%物理层速率，1Mbps、2Mbps%
         neighborList;%neighbors advAddr and unicastaddr%
         seq;%节点发送的消息序号%
         msgSendQueue;%msg to send%
@@ -22,6 +23,7 @@ classdef MeshNode < handle
             obj.unicastAddr=unicastAddr;
             obj.position=position;
             obj.txRange=15;%默认15m%
+            obj.phyRate=1000000;%默认1Mbps%
             obj.neighborList=[];
             obj.eventList=[];
             obj.msgSendQueue=[];
@@ -39,7 +41,9 @@ classdef MeshNode < handle
         function boardcast(obj,advPdu)
             global SYSTEM_TIME;
             global LIST_OF_MESH_NODE;
-            event=Event("EVT_ADV_END",SYSTEM_TIME,SYSTEM_TIME+376,advPdu,@eventHandler);
+            global REACH_NODE;
+            channelTime=calculatorBoardcastTime(obj,advPdu);
+            event=Event("EVT_ADV_END",SYSTEM_TIME+channelTime,SYSTEM_TIME+channelTime,advPdu,@eventHandler);
             addEvent(obj,event);
             
             if obj.neighborState==0
@@ -50,18 +54,17 @@ classdef MeshNode < handle
             neighbors=getSelfNeighbor(obj);
             n=numel(neighbors);
             for k=1:1:n
-                currNode=LIST_OF_MESH_NODE(neighbors(k));
-                if currNode.state==0
+                currNeighborUnicast=neighbors(k);
+%                 currNode=LIST_OF_MESH_NODE(neighbors(k));
+                if LIST_OF_MESH_NODE(currNeighborUnicast).state==0
                     %state=0  非常关键的一点 ：说明当前节点正在扫描接收数据包，因此，数据包冲突丢失，这里应该给个状态%
                 end
-                currNode.state=0;%更新为扫描接收状态%
-                startTime=SYSTEM_TIME;
-                event=Event("EVT_ADV_RECV_SUCC",startTime,startTime+376,advPdu,@eventHandler);
-                currNode.addEvent(event);
+                LIST_OF_MESH_NODE(currNeighborUnicast).state=0;%更新为扫描接收状态%
+                startTime=SYSTEM_TIME+channelTime;
+                event=Event("EVT_ADV_RECV_SUCC",startTime,startTime,advPdu,@eventHandler);
+                LIST_OF_MESH_NODE(currNeighborUnicast).addEvent(event);
+                REACH_NODE=union(REACH_NODE,currNeighborUnicast);
             end
-            
-            
-            %find neighbor%
             
         end
         
@@ -94,6 +97,12 @@ classdef MeshNode < handle
             result=advAddress(5)*256+advAddress(6);
         end
         
+        %计算广播用时%
+        function [result]=calculatorBoardcastTime(obj,advPacket)
+            txTime=(8*(numel(advPacket)+10)*1000*1000)/obj.phyRate;
+            result=int64(txTime);
+        end
+        
         %非定向不可连接广播包，ADV_NONCONN_IND，或者BLE_PACKET_TYPE_ADV_EXT%
         function onNonconnPacketReceivedSuccess(obj,advData)
             advPDU=AdvPDU.decodeAdvPDU(advData);
@@ -106,6 +115,7 @@ classdef MeshNode < handle
                 case 0x2B  %Mesh Beacon%
                     onBeaconPacketIn(obj,prevUnicast,advPDU.pdu);
                 otherwise
+                    Log.print("Exception Of ADV_TYPE");
             end
             
         end
@@ -117,16 +127,21 @@ classdef MeshNode < handle
             global SYSTEM_TIME;
             networkPDU=NetworkPDU.decodeNetworkPDU(networkData);
             cachePacket=CachedPacket(networkPDU.src,networkPDU.seq);
+            
             if(obj.msgCacheQueue.isPacketInCache(cachePacket)==1&&isPacketInSendCache(obj,networkPDU)==0)%已缓存并且不在发送队列,丢弃%
+%                 log=sprintf("time:%ld,node:%d,event:onNetworkPacketIn,action:discard packet,data:%s",SYSTEM_TIME,obj.unicastAddr,networkPDU.toString());
+%                 Log.print(log);
                 return;
             elseif (obj.msgCacheQueue.isPacketInCache(cachePacket)==0&&isPacketInSendCache(obj,networkPDU)==0)%未缓存未发送%
                     obj.msgCacheQueue.addPacketToCache(cachePacket);
                     if(networkPDU.dst==obj.unicastAddr)
-                        Log.print("time:"+SYSTEM_TIME+",node:"+unicast+",event:receivedPacket"+networkPDU);
+                        Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:receivedPacket,data:"+networkPDU.toString());
                         onTransportPacketIn(obj,networkPDU.transportPDU);
                         return
                     end
                     if networkPDU.ttl>2 %TTL要＞2才能转发%
+%                         log=sprintf("time:%ld,node:%d,event:onNetworkPacketIn,action:relay packet,data:%s",SYSTEM_TIME,obj.unicastAddr,networkPDU.toString());
+%                         Log.print(log);
                         networkPDU.ttl=networkPDU.ttl-1;
                        
                        %安排一个发送事件
@@ -139,7 +154,9 @@ classdef MeshNode < handle
                        addEvent(obj,event);
                     end
                     
-            elseif(networkPDU.dst~=obj.unicast)%已缓存未发送，需要进行节点裁剪%
+            elseif(networkPDU.dst~=obj.unicastAddr)%已缓存未发送，需要进行节点裁剪%
+%                 log=sprintf("time:%ld,node:%d,event:onNetworkPacketIn,action:cut node,data:%s",SYSTEM_TIME,obj.unicastAddr,networkPDU.toString());
+%                 Log.print(log);
                 %裁剪%
                 neighborsNeighborList=findNeighborByNeighborAddr(obj,prevAdvAddr);
                 networkRelayItem=getNetworkRelayItem(obj,networkPDU);
@@ -172,7 +189,9 @@ classdef MeshNode < handle
             else
                 rrd=k*t*log10(N);
             end
-            rrd=int64(rrd);
+            rrd=floor(rrd);%rrd最大值%
+            rrd=unidrnd(rrd)+10;%最终的rrd%。加上10us模拟程序处理时间
+            
         end
         %根据邻居节点的地址寻找邻居节点的邻居节点集合%
         function [neighbors]=findNeighborByNeighborAddr(obj,neighborAdvAddr)
@@ -254,12 +273,13 @@ classdef MeshNode < handle
             beacon=Beacon.decodeBeacon(beaconData);
             switch(beacon.beaconType)
                 case 0  %未配网信标%
-                    %未实现，默认网络已配网%
+                    onProvisioningBeaconPacketIn(obj,beacon);
                 case 1  %安全网络信标%
-                    %未实现%
+                    onSecureNetworkBeaconPacketIn(obj,beacon);
                 case 2  %临居节点集交换信标%
                     onNeighborBeaconPacketIn(obj,prevAdvAddr,beacon);
                 otherwise
+                    Log.print("未知信标类型");
             end
         end
         
@@ -271,7 +291,7 @@ classdef MeshNode < handle
                 currNeighborList=neighbor.neighborList;
                 neighborNode.neighborList=[currNeighborList newNeighborList];
                 obj.neighborList=[obj.neighborList neighborNode];
-            else %更新邻居节点的二跳邻居节点集和%
+            else %更新邻居节点的二跳邻居节点集合%
                 for k=1:1:obj.neighborList
                     neighborNode=obj.neighborList(k);%检查邻节点是不是已经存在%
                     if (neighborNode.advAddr==prevAdvAddr)&&(neighborNode.unicast==beacon.unicast)
@@ -283,6 +303,15 @@ classdef MeshNode < handle
                     end
                 end                
             end
+        end
+        
+        %安全网络信标%
+        function onSecureNetworkBeaconPacketIn(varargin)
+            
+        end
+        %未配网信标%
+        function onProvisioningBeaconPacketIn(varargin)
+            
         end
         
         %广播beacon包%
@@ -336,6 +365,7 @@ classdef MeshNode < handle
         
         %处理单个事件%
         function eventHandler(obj,event)
+            global SYSTEM_TIME;
             switch (event.type)
                 case 'EVT_RRD_ARRIVE'
                     relayItem=event.data;
@@ -350,14 +380,19 @@ classdef MeshNode < handle
                         networkPDUSend(obj,relayItem.networkPDU);
                     end
                     removeFromSendQueue(obj);%不管发不发送都要移除%
-                    
+                    log=sprintf("time:%ld,node:%d,event:EVT_RRD_ARRIVE,srcId:%d,dstId:%d,seq:%d",SYSTEM_TIME,obj.unicastAddr,relayItem.networkPDU.src,relayItem.networkPDU.dst,relayItem.networkPDU.seq);
+                    Log.print(log);
                 case 'EVT_ADV_START'
                     
                 case 'EVT_BEACON_ADV_START'
                     beaconPDUSend(obj,event.data);
                 case 'EVT_ADV_END'
                     obj.state=0;%回到扫描状态%
+%                     log=sprintf("time:%ld,node:%d,event:EVT_ADV_END",SYSTEM_TIME,obj.unicastAddr);
+%                     Log.print(log);
                 case 'EVT_ADV_RECV_SUCC'
+                    %log=sprintf("time:%ld,node:%d,event:EVT_ADV_RECV_SUCC",SYSTEM_TIME,obj.unicastAddr);
+                    %Log.print(log);
                     scanner(obj,event.data);
                 otherwise
             end
@@ -393,6 +428,18 @@ classdef MeshNode < handle
             obj.neighborState=1;
         end
         
+        %直接建立两跳邻居节点，在这份代码里面也给出了利用Beacon建立二跳邻居节点的能力%
+        function buildTwoHopNeighborList(obj)
+            global LIST_OF_MESH_NODE;
+            n=numel(obj.neighborList);
+            for k=1:1:n
+                neighborNode=LIST_OF_MESH_NODE(obj.neighborList(k).unicast);
+                neighborNeighborList=neighborNode.getSelfNeighbor();
+                obj.neighborList(k).neighborList=neighborNeighborList;
+            end
+            
+        end
+        
         
         
         %******************************************************%
@@ -401,7 +448,6 @@ classdef MeshNode < handle
         
         %节点主动发送消息%
         function submitMeshMessageSendEvent(obj,dst,eventStartTime)
-            %global SYSTEM_TIME;
             networkPDU=NetworkPDU(127,obj.seq,obj.unicastAddr,dst);
             obj.seq=obj.seq+1;
             cachePacket=CachedPacket(networkPDU.src,networkPDU.seq);
@@ -414,6 +460,8 @@ classdef MeshNode < handle
             addPacketToSendQueue(obj,networkRelayItem); 
             event=Event("EVT_RRD_ARRIVE",startTime,startTime+376,networkRelayItem,@eventHandler);
             addEvent(obj,event); 
+            log=sprintf("time:%ld,node:%d,event:send networkPDU,data:%s",startTime,obj.unicastAddr,networkPDU.toString());
+            Log.print(log);
         end
         
         %发送初始化Beacon，暂不调用%
@@ -427,6 +475,7 @@ classdef MeshNode < handle
         
         %发送邻节点集合Beacon%
         function sendNeighborListBeacon(obj)
+            global SYSTEM_TIME;
             if obj.neighborState==2
                 oneHopNeighborList=getSelfNeighbor(obj);
                 n=numel(oneHopNeighborList)-1;
