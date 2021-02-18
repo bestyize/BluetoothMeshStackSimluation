@@ -110,7 +110,7 @@ classdef MeshNode < handle
             prevUnicast=advAddressToUnicast(obj,advPDU.advA);
             switch (advPDU.adType)
                 case 0x29  %PB-ADV%
-                    %未实现配网%
+                    onProvisioningBeaconPacketIn(obj,advPDU.pdu);
                 case 0x2A  %Mesh Message%
                     onNetworkPacketIn(obj,prevUnicast,advPDU.pdu);
                 case 0x2B  %Mesh Beacon%
@@ -149,11 +149,11 @@ classdef MeshNode < handle
                        startTime=SYSTEM_TIME+getRandomRelayDelay(obj,getFirstCoveredCount(obj,prevAdvAddr));
                        neighborsNeighborList=findNeighborByNeighborAddr(obj,prevAdvAddr);
                        selfNeighborList=getSelfNeighbor(obj);
-                       networkRelayItem=NetworkRelayItem(networkPDU,selfNeighborList,neighborsNeighborList);
+                       networkRelayItem=NetworkRelayItem(networkPDU,selfNeighborList,[neighborsNeighborList prevAdvAddr]);
                        addPacketToSendQueue(obj,networkRelayItem); 
                        event=Event("EVT_RRD_ARRIVE",startTime,startTime+376,networkRelayItem,@eventHandler);
                        addEvent(obj,event);
-                       Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:create evt_rrd_arrive,planTime:"+startTime+" ,data:%s"+networkPDU.toString());
+%                        Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:create evt_rrd_arrive,planTime:"+startTime+" ,data:%s"+networkPDU.toString());
 
                     end
                     
@@ -163,7 +163,7 @@ classdef MeshNode < handle
                 %裁剪%
                 neighborsNeighborList=findNeighborByNeighborAddr(obj,prevAdvAddr);
                 networkRelayItem=getNetworkRelayItem(obj,networkPDU);
-                networkRelayItem.cutCoveredNode(neighborsNeighborList);
+                networkRelayItem.cutCoveredNode([neighborsNeighborList prevAdvAddr]);
             end
             
         end
@@ -338,7 +338,7 @@ classdef MeshNode < handle
                     obj.eventList(listIndex-1)=tempEvent;
                 else
                     if(obj.eventList(listIndex).startTime==obj.eventList(listIndex-1).startTime)
-                       obj.eventList(listIndex).startTime= obj.eventList(listIndex).startTime+1;%有重叠时间，调整一下，保证同一时刻不能处理两个事件%
+                       obj.eventList(listIndex).startTime= obj.eventList(listIndex).endTime+1;%有重叠时间，调整一下，保证同一时刻不能处理两个事件%
                     end
                     return;%一旦找到比自己小的了，就马上返回，因为前面的都比自己小了或者相等了%
                 end
@@ -348,7 +348,7 @@ classdef MeshNode < handle
         
         %处理事件链表，在这时，最少有一个事件，才能调用%
         function obj=processEventList(obj)
-            global SYSTEM_TIME;
+%             global SYSTEM_TIME;
             eventListSize=numel(obj.eventList);
             if eventListSize==0
                 return;
@@ -398,15 +398,19 @@ classdef MeshNode < handle
                     Nc=Nr-Nu;
                     prob=randomRelay(obj,Nc,Nu,Nr);
                     if(rand(1)<=prob)
-                        obj.state=1;
+%                         obj.state=1;%切换到广播态%
                         networkPDUSend(obj,relayItem.networkPDU);
+                    else
+                        log=sprintf("time:%ld,node:%d,event:abandon replay,data:%s",SYSTEM_TIME,obj.unicastAddr,relayItem.networkPDU.toString());
+                        Log.print(log);
                     end
                     removeFromSendQueue(obj);%不管发不发送都要移除%
-                    log=sprintf("time:%ld,node:%d,event:EVT_RRD_ARRIVE,srcId:%d,dstId:%d,seq:%d",SYSTEM_TIME,obj.unicastAddr,relayItem.networkPDU.src,relayItem.networkPDU.dst,relayItem.networkPDU.seq);
+                    log=sprintf("time:%ld,node:%d,event:EVT_RRD_ARRIVE,data:%s",SYSTEM_TIME,obj.unicastAddr,relayItem.networkPDU.toString());
                     Log.print(log);
                 case 'EVT_ADV_START'
                     
                 case 'EVT_BEACON_ADV_START'
+                    obj.state=1;%切换到广播态%
                     beaconPDUSend(obj,event.data);
                 case 'EVT_ADV_END'
                     obj.state=0;%回到扫描状态%

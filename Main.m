@@ -30,7 +30,7 @@ function main()
     buildNodeList();
     buildOneHopNeighborForEachNode();
     %建立两跳邻居节点关系
-    %buildTwoHopNeighborForEachNode();
+    buildTwoHopNeighborForEachNode();
     
     DrawHelper.drawSrcAndDst(srcId,dstId);
     pause(1);%先打印节点%
