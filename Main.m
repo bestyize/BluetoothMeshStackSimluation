@@ -24,8 +24,8 @@ function main()
     
     srcId=3;
     dstId=45;
-    packetNum=1;
-    rate=50;%60p/s%
+    packetNum=20;
+    rate=20;%20p/s%
 
     buildNodeList();
     buildOneHopNeighborForEachNode();
@@ -101,7 +101,7 @@ function packetSendEventHelper(srcId,dstId,num,rate)
     global LIST_OF_MESH_NODE;
     firstTimeToSend=10*1000+SYSTEM_TIME;%第10ms开始发送第一个数据包%
     
-    totalSendTime=1000*1000*num/60;
+    totalSendTime=1000*1000*num/rate;
     if num==1
         totalSendTime=0;
     end

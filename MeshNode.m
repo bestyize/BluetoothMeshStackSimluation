@@ -534,8 +534,17 @@ classdef MeshNode < handle
             Log.print(neighbors);
         end
         
+        %打印当前的事件链表%
         function printEventList(obj)
             Log.print(obj.eventList);
+            log="";
+            n=numel(obj.eventList);
+            
+            for k=1:1:n
+                event=obj.eventList(k)
+                log=log+sprintf("event:{type:%s,startTime:%ld,endTime:%ld,",event.type,event.startTime,event.endTime);
+            end
+            Log.print(log);
         end
        
         

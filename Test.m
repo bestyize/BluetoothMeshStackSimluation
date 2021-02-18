@@ -52,13 +52,15 @@ clc;
 % 
 % DrawHelper.drawSrcAndDst(srcId,dstId);
 
+% 
+% rrd=12123.123;
+% 
+% a=floor(rrd)
+% pause(10)
+% unidrnd(a)
 
-rrd=12123.123;
-
-a=floor(rrd)
-pause(10)
-unidrnd(a)
-
+fid=fopen('mesh.log','a+');
+fclose(fid);
 
 
 
