@@ -45,7 +45,8 @@ classdef MeshNode < handle
             channelTime=calculatorBoardcastTime(obj,advPdu);
             event=Event("EVT_ADV_END",SYSTEM_TIME+channelTime,SYSTEM_TIME+channelTime,advPdu,@eventHandler);
             addEvent(obj,event);
-            
+%             log=sprintf("time:%ld,node:%d,event:boardcast,action:boardcast packet",SYSTEM_TIME,obj.unicastAddr);
+%             Log.print(log);
             if obj.neighborState==0
                 %build one hop neighbor list%
                 buildOneHopNeighborList(obj);
@@ -100,7 +101,7 @@ classdef MeshNode < handle
         %计算广播用时%
         function [result]=calculatorBoardcastTime(obj,advPacket)
             txTime=(8*(numel(advPacket)+10)*1000*1000)/obj.phyRate;
-            result=int64(txTime);
+            result=floor(txTime);
         end
         
         %非定向不可连接广播包，ADV_NONCONN_IND，或者BLE_PACKET_TYPE_ADV_EXT%
@@ -135,7 +136,7 @@ classdef MeshNode < handle
             elseif (obj.msgCacheQueue.isPacketInCache(cachePacket)==0&&isPacketInSendCache(obj,networkPDU)==0)%未缓存未发送%
                     obj.msgCacheQueue.addPacketToCache(cachePacket);
                     if(networkPDU.dst==obj.unicastAddr)
-                        Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:receivedPacket,data:"+networkPDU.toString());
+                        Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:receivedPacket,data:%s"+networkPDU.toString());
                         onTransportPacketIn(obj,networkPDU.transportPDU);
                         return
                     end
@@ -152,6 +153,8 @@ classdef MeshNode < handle
                        addPacketToSendQueue(obj,networkRelayItem); 
                        event=Event("EVT_RRD_ARRIVE",startTime,startTime+376,networkRelayItem,@eventHandler);
                        addEvent(obj,event);
+                       Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:create evt_rrd_arrive,planTime:"+startTime+" ,data:%s"+networkPDU.toString());
+
                     end
                     
             elseif(networkPDU.dst~=obj.unicastAddr)%已缓存未发送，需要进行节点裁剪%
@@ -334,6 +337,9 @@ classdef MeshNode < handle
                     obj.eventList(listIndex)=obj.eventList(listIndex-1);
                     obj.eventList(listIndex-1)=tempEvent;
                 else
+                    if(obj.eventList(listIndex).startTime==obj.eventList(listIndex-1).startTime)
+                       obj.eventList(listIndex).startTime= obj.eventList(listIndex).startTime+1;%有重叠时间，调整一下，保证同一时刻不能处理两个事件%
+                    end
                     return;%一旦找到比自己小的了，就马上返回，因为前面的都比自己小了或者相等了%
                 end
                 listIndex=listIndex-1;%指针向前移动%
@@ -342,26 +348,42 @@ classdef MeshNode < handle
         
         %处理事件链表，在这时，最少有一个事件，才能调用%
         function obj=processEventList(obj)
+            global SYSTEM_TIME;
             eventListSize=numel(obj.eventList);
             if eventListSize==0
                 return;
             end
-            currTimeEvent=obj.eventList(1);
-            eventTime=currTimeEvent.startTime;
-            nextDiff=1;
-            for k=1:1:eventListSize
-                if eventTime==obj.eventList(k).startTime
-                    obj.eventList(k).eventHandler(obj,obj.eventList(k));%处理之后事件链表长度可能已经变了会变长%
-                else
-                    nextDiff=k;
-                    break;
-                end
-            end
-            for k=1:1:nextDiff
-                obj.eventList(1)=[];%删除事件%
-            end
+            obj.eventList(1).eventHandler(obj,obj.eventList(1));
+
+            %Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:remove evt,eventType:"+obj.eventList(1).type);
+            obj.eventList(1)=[];%删除事件%
             
         end
+        
+%        %处理事件链表，在这时，最少有一个事件，才能调用%
+%         function obj=processEventList(obj)
+%             global SYSTEM_TIME;
+%             eventListSize=numel(obj.eventList);
+%             if eventListSize==0
+%                 return;
+%             end
+%             currTimeEvent=obj.eventList(1);
+%             eventTime=currTimeEvent.startTime;
+%             nextDiff=1;
+%             for k=1:1:eventListSize
+%                 if eventTime==obj.eventList(k).startTime
+%                     obj.eventList(k).eventHandler(obj,obj.eventList(k));%处理之后事件链表长度可能已经变了会变长%
+%                 else
+%                     nextDiff=k;
+%                     break;
+%                 end
+%             end
+%             for k=1:1:nextDiff
+%                  Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:remove evt,eventType:"+obj.eventList(1).type);
+%                  obj.eventList(1)=[];%删除事件%
+%             end
+%             
+%         end
         
         %处理单个事件%
         function eventHandler(obj,event)

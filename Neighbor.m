@@ -1,4 +1,4 @@
-classdef Neighbor
+classdef Neighbor<handle
     properties
         advAddr % 6 Byte % 
         unicast % 2 Byte %

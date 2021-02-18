@@ -1,4 +1,4 @@
-classdef NetworkRelayItem
+classdef NetworkRelayItem<handle
     properties
         networkPDU NetworkPDU;
         unCoveredNeighborList;%在转发前还没覆盖的邻居节点集合%

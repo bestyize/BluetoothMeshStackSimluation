@@ -1,4 +1,4 @@
-classdef NetworkPDU
+classdef NetworkPDU<handle
     properties
         ivi % 1 bit %
         nid % 7 bit %
