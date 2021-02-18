@@ -4,23 +4,24 @@ global LIST_OF_MESH_NODE;
 global SYSTEM_TIME;
 global DEFAULT_RANGE;
 global REACH_NODE;
+global SIMULTATION_TIME;
+
+global NEIGHBOR_UPDATE_TIME_LIST;
 
 LIST_OF_MESH_NODE=[];
 SYSTEM_TIME=0;
 DEFAULT_RANGE=15;
 REACH_NODE=[];
-
-
-
-
+SIMULTATION_TIME=10*1000*1000;
+NEIGHBOR_UPDATE_TIME_LIST=0:60*1000*1000:SIMULTATION_TIME;
 
 main();
-
 
 function main()
     global LIST_OF_MESH_NODE;
     global SYSTEM_TIME;
-    global REACH_NODE;
+%     global REACH_NODE;
+    global SIMULTATION_TIME;
     
     srcId=3;
     dstId=45;
@@ -36,7 +37,7 @@ function main()
     pause(1);%先打印节点%
     %printAvgNodeDegree();
     
-    simlulationTime=10*1000*1000;%仿真10秒%
+    simlulationTime=SIMULTATION_TIME;%仿真10秒%
     timestamp=0;
     nodeCount=numel(LIST_OF_MESH_NODE);
     
@@ -113,8 +114,48 @@ function packetSendEventHelper(srcId,dstId,num,rate)
     for k=1:1:num
         meshNode.submitMeshMessageSendEvent(dstId,timeToSendList(k));
     end
-    
    
+end
+
+%按照节点的序号，每10ms有一个节点发送初始化信标，携带自身的数据，由于信标不参与中继
+% 所以，节点错开10ms的发送时间，不会发生碰撞冲突问题,同时，100个节点只需要1s即可配置完成，占用时间也不长。
+function oneHopNeighborBuildEventHelper()
+    
+    global NEIGHBOR_UPDATE_TIME_LIST;
+    global LIST_OF_MESH_NODE;
+    
+    updateCnt=numel(NEIGHBOR_UPDATE_TIME_LIST);
+    if updateCnt==0
+        Log.print("未计划下次更新");
+        return
+    end
+    startTime=NEIGHBOR_UPDATE_TIME_LIST(1);
+    n=numel(LIST_OF_MESH_NODE);
+    
+    for k=1:1:n
+        meshNode=LIST_OF_MESH_NODE(k);
+        meshNode.sendInitBeacon(meshNode,startTime+10*1000*k);
+        meshNode.registInitBeaconFinishEvent(startTime+10*1000*n*2);
+    end
+end
+
+%二跳采用同样的方式%
+function twoHopNeighborBuildEventHelper()
+    global NEIGHBOR_UPDATE_TIME_LIST;
+    global LIST_OF_MESH_NODE;
+    updateCnt=numel(NEIGHBOR_UPDATE_TIME_LIST);
+    if updateCnt==0
+        Log.print("未计划下次更新");
+        return
+    end
+    startTime=NEIGHBOR_UPDATE_TIME_LIST(1);
+    n=numel(LIST_OF_MESH_NODE);
+    
+    for k=1:1:n
+        meshNode=LIST_OF_MESH_NODE(k);
+        meshNode.registBuildTwoHopNeighborListEvent(meshNode,startTime+10*1000*k);
+    end
+    NEIGHBOR_UPDATE_TIME_LIST(1)=[];
 end
 
 

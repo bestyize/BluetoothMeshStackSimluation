@@ -17,6 +17,9 @@ classdef AdvPDU
         function [advPDU]=serialize(obj)
             advPDU=[obj.advA';obj.len;obj.adType;obj.pdu']';
         end
+        function [result]=toString(obj)
+            result=matlab.unittest.diagnostics.ConstraintDiagnostic.getDisplayableString(obj);
+        end
     end
     
     methods(Static)

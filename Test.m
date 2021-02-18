@@ -59,8 +59,10 @@ clc;
 % pause(10)
 % unidrnd(a)
 
-fid=fopen('mesh.log','a+');
-fclose(fid);
+% fid=fopen('mesh.log','a+');
+% fclose(fid);
+
+x=0:60*1000*1000:10000000000
 
 
 

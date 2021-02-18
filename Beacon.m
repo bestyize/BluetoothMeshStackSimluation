@@ -34,6 +34,11 @@ classdef Beacon
             end
             beacon=[beaconTypeArr;unicastArr;nCntComp;addressList]';
         end
+        
+        function [result]=toString(obj)
+            result=sprintf("beacon:{beaconType:%d,unicast=%d,nCnt=%d,Comp=%d}",obj.beaconType,obj.unicast,obj.nCnt,obj.Comp);
+        end
+        
     end
     
     methods(Static)

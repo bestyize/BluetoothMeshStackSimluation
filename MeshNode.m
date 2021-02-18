@@ -420,6 +420,10 @@ classdef MeshNode < handle
                     %log=sprintf("time:%ld,node:%d,event:EVT_ADV_RECV_SUCC",SYSTEM_TIME,obj.unicastAddr);
                     %Log.print(log);
                     scanner(obj,event.data);
+                case 'EVT_ONE_HOP_NEIGHBOR_UPDATE_SUCCESS'
+                    sendInitBeaconFinished(obj);
+                case 'EVT_START_BUILD_TWO_HOP_NEIGHBOR_LIST'
+                    sendNeighborListBeacon();
                 otherwise
             end
                     
@@ -491,11 +495,26 @@ classdef MeshNode < handle
         end
         
         %发送初始化Beacon，暂不调用%
-        function sendInitBeacon(obj)
-            global SYSTEM_TIME;
-            startTime=SYSTEM_TIME+getRandomRelayDelay(obj,0);
+        function sendInitBeacon(obj,startTime)
+            %global SYSTEM_TIME;
+            %startTime=SYSTEM_TIME+getRandomRelayDelay(obj,0);
             beacon=Beacon(2,obj.unicastAddr,0,1,zeros(1,12));
             event=Event("EVT_ADV_START",startTime,startTime+376,beacon.serialize(),@eventHandler);
+            addEvent(obj,event);
+        end
+        
+        function registInitBeaconFinishEvent(obj,startTime)
+            event=Event("EVT_ONE_HOP_NEIGHBOR_UPDATE_SUCCESS",startTime,startTime,[],@eventHandler);
+            addEvent(obj,event);
+        end
+        
+        %通知完成一跳邻居节点收集%
+        function sendInitBeaconFinished(obj)
+            obj.neighborState=1;
+        end
+        %开始二跳邻居节点收集%
+        function registBuildTwoHopNeighborListEvent(obj,startTime)
+            event=Event("EVT_START_BUILD_TWO_HOP_NEIGHBOR_LIST",startTime,startTime,[],@eventHandler);
             addEvent(obj,event);
         end
         

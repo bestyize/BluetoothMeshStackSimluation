@@ -13,6 +13,10 @@ classdef CachedPacket<handle
             obj.src=src;
             obj.seq=seq;
         end
+        
+        function [result]=toString(obj)
+            result=sprintf("CachedPacket:{src:%d,dst=%d}",obj.src,obj.seq);
+        end
     end
 end
 
