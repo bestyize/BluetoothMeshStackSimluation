@@ -15,6 +15,9 @@ classdef MeshNode < handle
         occurCollision;%记录接受过程中是否发生了冲突%
         eventList;%节点发生的事件%
         neighborState;%0表示未收集一跳邻居节点，1表示收集完一跳邻居节点集合，2表示全部收集完成%
+        scanChannel;%扫描的信道%
+        scanWindow;%扫描窗口%
+        advertisingChannel;
         
     end
     
@@ -35,6 +38,9 @@ classdef MeshNode < handle
             obj.occurCollision=0;
             obj.seq=1;
             obj.neighborState=0;
+            obj.scanWindow=2*1000*1000;%2秒切换%
+            obj.advertisingChannel=[37 38 39];
+            obj.scanChannel=obj.advertisingChannel(floor(rand(1,1)*numel(obj.advertisingChannel))+1);%节点初始扫描信道随机化%
         end
         
         %******************************************************%
@@ -54,31 +60,69 @@ classdef MeshNode < handle
                 %build one hop neighbor list%
                 buildOneHopNeighborList(obj);
             end
-            
+            advChannelSwitchTime=152;%两个广播信道切换的时间间隔，在2018年sensor那篇文献中，测得的值%
             neighbors=getSelfNeighbor(obj);
             n=numel(neighbors);
             for k=1:1:n
                 currNeighborUnicast=neighbors(k);
-%                 节点处于扫描态,并且未接收时才接收广播包
-                if LIST_OF_MESH_NODE(currNeighborUnicast).state==0&&LIST_OF_MESH_NODE(currNeighborUnicast).accepting==0
-                    %state=0  非常关键的一点 ：说明当前节点正在扫描接收数据包，因此，数据包冲突丢失，这里应该给个状态%
-                    startTime=SYSTEM_TIME+channelTime;
-                    event=Event("EVT_ADV_RECV_FINISH",startTime,startTime,advPdu,@eventHandler);
-                    LIST_OF_MESH_NODE(currNeighborUnicast).addEvent(event);
-                    LIST_OF_MESH_NODE(currNeighborUnicast).accepting=1;
-                %节点正在接收，会发生碰撞，丢失数据包%
-                elseif LIST_OF_MESH_NODE(currNeighborUnicast).state==0&&LIST_OF_MESH_NODE(currNeighborUnicast).accepting==1
-                    log=sprintf("time:%ld,node:%d,event:packet collision,boardcast node:%d",SYSTEM_TIME,LIST_OF_MESH_NODE(currNeighborUnicast).unicastAddr,obj.unicastAddr);
-                    Log.print(log);
-                    obj.occurCollision=1;
-                %邻居节点正在广播，由于信道争用，他们的共有邻居节点如果处于扫描接收态，将会碰撞丢包,这种情况在第二种情况中有体现
-                %因此这里仅打印出来，不处理
-                elseif LIST_OF_MESH_NODE(currNeighborUnicast).state==1
-%                     collsionNodeList=intersect(neighbors,LIST_OF_MESH_NODE(currNeighborUnicast).getSelfNeighbor());
-%                     log=sprintf("time:%ld,node:%d,event:neighbor list packet collision,boardcast node:%d,collsion node:%s",SYSTEM_TIME,LIST_OF_MESH_NODE(currNeighborUnicast).unicastAddr,obj.unicastAddr,Helper.vectorToString(collsionNodeList));
-%                     Log.print(log);
+                channelCnt=numel(obj.advertisingChannel);
+                for t=1:1:channelCnt
+                    currNodeAdvertisingChannel=obj.advertisingChannel(t);
+                    if LIST_OF_MESH_NODE(currNeighborUnicast).scanChannel==currNodeAdvertisingChannel%判断节点当前的扫描信道，广播包只能在一个信道上完成接收%
+        %                 节点处于扫描态,并且未接收时才接收广播包
+                        if LIST_OF_MESH_NODE(currNeighborUnicast).state==0&&LIST_OF_MESH_NODE(currNeighborUnicast).accepting==0
+                            %state=0  非常关键的一点 ：说明当前节点正在扫描接收数据包，因此，数据包冲突丢失，这里应该给个状态%
+                            startTime=SYSTEM_TIME+channelTime+(t-1)*advChannelSwitchTime;
+                            event=Event("EVT_ADV_RECV_FINISH",startTime,startTime,advPdu,@eventHandler);
+                            LIST_OF_MESH_NODE(currNeighborUnicast).addEvent(event);
+                            LIST_OF_MESH_NODE(currNeighborUnicast).accepting=1;
+                        %节点正在接收，会发生碰撞，丢失数据包%
+                        elseif LIST_OF_MESH_NODE(currNeighborUnicast).state==0&&LIST_OF_MESH_NODE(currNeighborUnicast).accepting==1
+                            log=sprintf("time:%ld,node:%d,event:packet collision,boardcast node:%d",SYSTEM_TIME,LIST_OF_MESH_NODE(currNeighborUnicast).unicastAddr,obj.unicastAddr);
+                            Log.print(log);
+                            obj.occurCollision=1;
+                        %邻居节点正在广播，由于信道争用，他们的共有邻居节点如果处于扫描接收态，将会碰撞丢包,这种情况在第二种情况中有体现
+                        %因此这里仅打印出来，不处理
+                        elseif LIST_OF_MESH_NODE(currNeighborUnicast).state==1
+        %                     collsionNodeList=intersect(neighbors,LIST_OF_MESH_NODE(currNeighborUnicast).getSelfNeighbor());
+        %                     log=sprintf("time:%ld,node:%d,event:neighbor list packet collision,boardcast node:%d,collsion node:%s",SYSTEM_TIME,LIST_OF_MESH_NODE(currNeighborUnicast).unicastAddr,obj.unicastAddr,Helper.vectorToString(collsionNodeList));
+        %                     Log.print(log);
+                        end                          
+                    end
+                  
                 end
-                
+            end
+            
+        end
+        
+        %切换扫描信道%
+        function switchToNextScanChannel(obj)
+            global SYSTEM_TIME;
+            currScanChannel=obj.scanChannel;
+            allAdvChannel=obj.advertisingChannel;
+            n=numel(allAdvChannel);
+            for k=1:1:n
+                if allAdvChannel(k)==currScanChannel
+                    if k<n
+                        obj.scanChannel=allAdvChannel(k+1);
+                    else
+                        obj.scanChannel=allAdvChannel(1);
+                    end
+                    break;
+                end
+            end
+            Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:switch scan channel,prevChannel:"+currScanChannel+",currChannel:"+obj.scanChannel);
+        end
+        
+        %注册切换扫描信道事件%
+        function registSwitchScanChannelEvent(obj,totalSimlutationTime)
+            times=obj.scanWindow:obj.scanWindow:totalSimlutationTime;
+            n=numel(times);
+            if n>0
+                for k=1:1:n
+                    event=Event("EVT_SWITCH_SCAN_CHANNEL",times(k),times(k),[],@eventHandler);
+                    addEvent(obj,event);
+                end
             end
             
         end
@@ -374,7 +418,6 @@ classdef MeshNode < handle
 
             %Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:remove evt,eventType:"+obj.eventList(1).type);
             obj.eventList(1)=[];%删除事件%
-            
         end
         
 %        %处理事件链表，在这时，最少有一个事件，才能调用%
@@ -446,7 +489,9 @@ classdef MeshNode < handle
                 case 'EVT_ONE_HOP_NEIGHBOR_UPDATE_SUCCESS'
                     sendInitBeaconFinished(obj);
                 case 'EVT_START_BUILD_TWO_HOP_NEIGHBOR_LIST'
-                    sendNeighborListBeacon();
+                    sendNeighborListBeacon(obj);
+                case 'EVT_SWITCH_SCAN_CHANNEL'
+                    switchToNextScanChannel(obj);
                 otherwise
             end
                     
@@ -578,13 +623,12 @@ classdef MeshNode < handle
         
         %打印当前的事件链表%
         function printEventList(obj)
-            Log.print(obj.eventList);
             log="";
             n=numel(obj.eventList);
             
             for k=1:1:n
                 event=obj.eventList(k);
-                log=log+sprintf("event:{type:%s,startTime:%ld,endTime:%ld,",event.type,event.startTime,event.endTime);
+                log=log+sprintf("event:{type:%s,startTime:%ld,endTime:%ld},",event.type,event.startTime,event.endTime);
             end
             Log.print(log);
         end
