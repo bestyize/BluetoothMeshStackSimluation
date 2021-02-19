@@ -72,7 +72,7 @@ classdef MeshNode < handle
         %                 节点处于扫描态,并且未接收时才接收广播包
                         if LIST_OF_MESH_NODE(currNeighborUnicast).state==0&&LIST_OF_MESH_NODE(currNeighborUnicast).accepting==0
                             %state=0  非常关键的一点 ：说明当前节点正在扫描接收数据包，因此，数据包冲突丢失，这里应该给个状态%
-                            startTime=SYSTEM_TIME+channelTime+(t-1)*advChannelSwitchTime;
+                            startTime=SYSTEM_TIME+channelTime+(t-1)*(advChannelSwitchTime+channelTime);
                             event=Event("EVT_ADV_RECV_FINISH",startTime,startTime,advPdu,@eventHandler);
                             LIST_OF_MESH_NODE(currNeighborUnicast).addEvent(event);
                             LIST_OF_MESH_NODE(currNeighborUnicast).accepting=1;
