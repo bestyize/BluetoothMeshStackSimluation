@@ -67,9 +67,16 @@ clc;
 % vector=1:1:10;
 % Helper.vectorToString(vector)
 
-str=datestr(now,31);
-str=strrep(str,":","-");
-str=strrep(str," ","_")
+% str=datestr(now,31);
+% str=strrep(str,":","-");
+% str=strrep(str," ","_")
+
+% floor(rand(1,1)*3)+1
+
+
+t=200:200:150
+
+numel(t)
 
 
 

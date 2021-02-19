@@ -43,6 +43,8 @@ function main()
 %     pause(1);%先打印节点%
     %printAvgNodeDegree();
     
+    scanChannelSwitchEventHelper(SIMULTATION_TIME);
+    
     simlulationTime=SIMULTATION_TIME;%仿真10秒%
     timestamp=0;
     nodeCount=numel(LIST_OF_MESH_NODE);
@@ -152,7 +154,7 @@ function oneHopNeighborBuildEventHelper()
     
     for k=1:1:n
         meshNode=LIST_OF_MESH_NODE(k);
-        meshNode.sendInitBeacon(meshNode,startTime+10*1000*k);
+        meshNode.sendInitBeacon(startTime+10*1000*k);
         meshNode.registInitBeaconFinishEvent(startTime+10*1000*n*2);
     end
 end
@@ -171,9 +173,20 @@ function twoHopNeighborBuildEventHelper()
     
     for k=1:1:n
         meshNode=LIST_OF_MESH_NODE(k);
-        meshNode.registBuildTwoHopNeighborListEvent(meshNode,startTime+10*1000*k);
+        meshNode.registBuildTwoHopNeighborListEvent(startTime+10*1000*k);
     end
     NEIGHBOR_UPDATE_TIME_LIST(1)=[];
+end
+
+%注册信道切换事件%
+function scanChannelSwitchEventHelper(totalSimluationTime)
+    global LIST_OF_MESH_NODE;
+    n=numel(LIST_OF_MESH_NODE);
+    for k=1:1:n
+        meshNode=LIST_OF_MESH_NODE(k);
+        meshNode.registSwitchScanChannelEvent(totalSimluationTime);
+    end
+    
 end
 
 
