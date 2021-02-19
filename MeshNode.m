@@ -63,7 +63,7 @@ classdef MeshNode < handle
                 if LIST_OF_MESH_NODE(currNeighborUnicast).state==0&&LIST_OF_MESH_NODE(currNeighborUnicast).accepting==0
                     %state=0  非常关键的一点 ：说明当前节点正在扫描接收数据包，因此，数据包冲突丢失，这里应该给个状态%
                     startTime=SYSTEM_TIME+channelTime;
-                    event=Event("EVT_ADV_RECV_SUCC",startTime,startTime,advPdu,@eventHandler);
+                    event=Event("EVT_ADV_RECV_FINISH",startTime,startTime,advPdu,@eventHandler);
                     LIST_OF_MESH_NODE(currNeighborUnicast).addEvent(event);
                     LIST_OF_MESH_NODE(currNeighborUnicast).accepting=1;
                 %节点正在接收，会发生碰撞，丢失数据包%
@@ -168,7 +168,7 @@ classdef MeshNode < handle
                        selfNeighborList=getSelfNeighbor(obj);
                        networkRelayItem=NetworkRelayItem(networkPDU,selfNeighborList,[neighborsNeighborList prevAdvAddr]);
                        addPacketToSendQueue(obj,networkRelayItem); 
-                       event=Event("EVT_RRD_ARRIVE",startTime,startTime+376,networkRelayItem,@eventHandler);
+                       event=Event("EVT_RRD_ARRIVE",startTime,startTime,networkRelayItem,@eventHandler);
                        addEvent(obj,event);
 %                        Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:create evt_rrd_arrive,planTime:"+startTime+" ,data:%s"+networkPDU.toString());
 
@@ -424,8 +424,6 @@ classdef MeshNode < handle
                     removeFromSendQueue(obj);%不管发不发送都要移除%
                     log=sprintf("time:%ld,node:%d,event:EVT_RRD_ARRIVE,data:%s",SYSTEM_TIME,obj.unicastAddr,relayItem.networkPDU.toString());
                     Log.print(log);
-                case 'EVT_ADV_START'
-                    
                 case 'EVT_BEACON_ADV_START'
                     obj.state=1;%切换到广播态%
                     beaconPDUSend(obj,event.data);
@@ -434,8 +432,8 @@ classdef MeshNode < handle
                     
 %                     log=sprintf("time:%ld,node:%d,event:EVT_ADV_END",SYSTEM_TIME,obj.unicastAddr);
 %                     Log.print(log);
-                case 'EVT_ADV_RECV_SUCC'
-                    %log=sprintf("time:%ld,node:%d,event:EVT_ADV_RECV_SUCC",SYSTEM_TIME,obj.unicastAddr);
+                case 'EVT_ADV_RECV_FINISH'
+                    %log=sprintf("time:%ld,node:%d,event:EVT_ADV_RECV_FINISH",SYSTEM_TIME,obj.unicastAddr);
                     %Log.print(log);
                     obj.accepting=0;
                     if obj.occurCollision==1%接收失败.但是当前接收失败不代表不能接受到正常的数据包。有可能在另一个不冲突的时刻接收成功%
@@ -513,7 +511,7 @@ classdef MeshNode < handle
             selfNeighborList=getSelfNeighbor(obj);
             networkRelayItem=NetworkRelayItem(networkPDU,selfNeighborList,neighborsNeighborList);
             addPacketToSendQueue(obj,networkRelayItem); 
-            event=Event("EVT_RRD_ARRIVE",startTime,startTime+376,networkRelayItem,@eventHandler);
+            event=Event("EVT_RRD_ARRIVE",startTime,startTime,networkRelayItem,@eventHandler);
             addEvent(obj,event); 
             log=sprintf("time:%ld,node:%d,event:send networkPDU,data:%s",startTime,obj.unicastAddr,networkPDU.toString());
             Log.print(log);
@@ -524,7 +522,7 @@ classdef MeshNode < handle
             %global SYSTEM_TIME;
             %startTime=SYSTEM_TIME+getRandomRelayDelay(obj,0);
             beacon=Beacon(2,obj.unicastAddr,0,1,zeros(1,12));
-            event=Event("EVT_ADV_START",startTime,startTime+376,beacon.serialize(),@eventHandler);
+            event=Event("EVT_BEACON_ADV_START",startTime,startTime,beacon.serialize(),@eventHandler);
             addEvent(obj,event);
         end
         
@@ -552,16 +550,16 @@ classdef MeshNode < handle
                 if n<=12
                     startTime=SYSTEM_TIME+getRandomRelayDelay(obj,0);
                     beacon=Beacon(2,obj.unicastAddr,12,1,oneHopNeighborList);
-                    event=Event("EVT_BEACON_ADV_START",startTime,startTime+376,beacon.serialize(),@eventHandler);
+                    event=Event("EVT_BEACON_ADV_START",startTime,startTime,beacon.serialize(),@eventHandler);
                     addEvent(obj,event);
                 elseif n<=24
                     startTime1=SYSTEM_TIME+getRandomRelayDelay(obj,0);
                     beacon1=Beacon(2,obj.unicastAddr,12,0,oneHopNeighborList(1:12));
-                    event1=Event("EVT_BEACON_ADV_START",startTime1,startTime1+376,beacon1.serialize(),@eventHandler);
+                    event1=Event("EVT_BEACON_ADV_START",startTime1,startTime1,beacon1.serialize(),@eventHandler);
                     addEvent(obj,event1);
                     startTime2=startTime1+20*1000;%20ms后下一次广播%
                     beacon2=Beacon(2,obj.unicastAddr,12,1,oneHopNeighborList(13:n));
-                    event2=Event("EVT_BEACON_ADV_START",startTime2,startTime2+376,beacon2.serialize(),@eventHandler);
+                    event2=Event("EVT_BEACON_ADV_START",startTime2,startTime2,beacon2.serialize(),@eventHandler);
                     addEvent(obj,event2);
                 end
                 
