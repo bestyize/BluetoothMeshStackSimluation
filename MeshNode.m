@@ -149,11 +149,14 @@ classdef MeshNode < handle
                 return;
             elseif (obj.msgCacheQueue.isPacketInCache(cachePacket)==0&&isPacketInSendCache(obj,networkPDU)==0)%未缓存未发送%
                     obj.msgCacheQueue.addPacketToCache(cachePacket);
+                    Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:receivedPacket,data:"+networkPDU.toString());
                     if(networkPDU.dst==obj.unicastAddr)
-                        Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:receivedPacket,data:%s"+networkPDU.toString());
+                        Log.print("time:"+SYSTEM_TIME+",node:"+obj.unicastAddr+",event:arrive destation,data:"+networkPDU.toString());
                         onTransportPacketIn(obj,networkPDU.transportPDU);
                         return
                     end
+                    
+
                     if networkPDU.ttl>2 %TTL要＞2才能转发%
 %                         log=sprintf("time:%ld,node:%d,event:onNetworkPacketIn,action:relay packet,data:%s",SYSTEM_TIME,obj.unicastAddr,networkPDU.toString());
 %                         Log.print(log);
