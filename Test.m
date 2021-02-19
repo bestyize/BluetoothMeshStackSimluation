@@ -64,8 +64,13 @@ clc;
 
 % x=0:60*1000*1000:10000000000
 
-vector=1:1:10;
-Helper.vectorToString(vector)
+% vector=1:1:10;
+% Helper.vectorToString(vector)
+
+str=datestr(now,31);
+str=strrep(str,":","-");
+str=strrep(str," ","_")
+
 
 
 

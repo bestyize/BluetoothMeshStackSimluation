@@ -4,7 +4,10 @@ classdef Log
             logs
             persistent  fid
             if(isempty(fid))
-                fid=fopen('mesh.log','a+');
+                str=datestr(now,31);
+                str=strrep(str,":","-");
+                str=strrep(str," ","_")
+                fid=fopen(str+'mesh.log','a+');
             end
             fprintf(fid,logs+"\r\n");
         end

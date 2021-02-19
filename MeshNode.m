@@ -585,11 +585,24 @@ classdef MeshNode < handle
             n=numel(obj.eventList);
             
             for k=1:1:n
-                event=obj.eventList(k)
+                event=obj.eventList(k);
                 log=log+sprintf("event:{type:%s,startTime:%ld,endTime:%ld,",event.type,event.startTime,event.endTime);
             end
             Log.print(log);
         end
+        
+        function printCacheList(obj)
+           msgCacheList=obj.msgCacheQueue.cachedPacketList;
+           log="";
+           n=numel(msgCacheList);
+           for k=1:1:n
+               cache=msgCacheList(k);
+               log=log+"cache:{src:"+cache.src+",seq:"+cache.seq+"},";
+           end
+           Log.print(log);
+        end
+        
+       
        
         
     end

@@ -27,7 +27,7 @@ function main()
     
     srcId=3;
     dstId=45;
-    packetNum=45;
+    packetNum=200;
     rate=50;%50p/s%
 
     buildNodeList();
