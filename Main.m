@@ -8,12 +8,16 @@ global SIMULTATION_TIME;
 
 global NEIGHBOR_UPDATE_TIME_LIST;
 
+global EVENT_TIME_HEAD;
+
 LIST_OF_MESH_NODE=[];
 SYSTEM_TIME=0;
 DEFAULT_RANGE=15;
 REACH_NODE=[];
-SIMULTATION_TIME=1*1000*1000;%仿真1s%
+SIMULTATION_TIME=5*1000*1000;%仿真5s%
 NEIGHBOR_UPDATE_TIME_LIST=0:60*1000*1000:SIMULTATION_TIME;
+EVENT_TIME_HEAD=0;%所有事件中的最%
+
 tic;
 main();
 toc;
@@ -48,6 +52,8 @@ function main()
     %系统开始运行%
     while timestamp<simlulationTime
         SYSTEM_TIME=timestamp;
+        temp=timestamp;
+        eventEmpty=0;
         for k=1:1:nodeCount
             meshNode=LIST_OF_MESH_NODE(k);
             eventList=meshNode.eventList;
@@ -58,8 +64,18 @@ function main()
                     meshNode.processEventList();%节点自己维护一个事件链表%
                 end
             end
+            if numel(eventList)>=1
+                eventEmpty=1;
+                nextTime=eventList(1).startTime;
+                if temp==timestamp||nextTime<temp
+                    temp=nextTime;
+                end
+            end
         end
-        timestamp=timestamp+1;
+        if(eventEmpty==0)
+            return;
+        end
+        timestamp=temp;
     end
     
 end
