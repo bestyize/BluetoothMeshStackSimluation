@@ -11,6 +11,8 @@ classdef MeshNode < handle
         msgSendQueue;%msg to send%
         msgCacheQueue;%msg had recived%
         state;%sacnning=0 ,boardcasting=1  % 
+        accepting;%1表示节点处于扫描态且正在接收广播信道数据%
+        occurCollision;%记录接受过程中是否发生了冲突%
         eventList;%节点发生的事件%
         neighborState;%0表示未收集一跳邻居节点，1表示收集完一跳邻居节点集合，2表示全部收集完成%
         
@@ -29,6 +31,8 @@ classdef MeshNode < handle
             obj.msgSendQueue=[];
             obj.msgCacheQueue=Cache(100);%默认缓存大小为100%
             obj.state=0;
+            obj.accepting=0;
+            obj.occurCollision=0;
             obj.seq=1;
             obj.neighborState=0;
         end
@@ -41,7 +45,6 @@ classdef MeshNode < handle
         function boardcast(obj,advPdu)
             global SYSTEM_TIME;
             global LIST_OF_MESH_NODE;
-            global REACH_NODE;
             channelTime=calculatorBoardcastTime(obj,advPdu);
             event=Event("EVT_ADV_END",SYSTEM_TIME+channelTime,SYSTEM_TIME+channelTime,advPdu,@eventHandler);
             addEvent(obj,event);
@@ -56,24 +59,35 @@ classdef MeshNode < handle
             n=numel(neighbors);
             for k=1:1:n
                 currNeighborUnicast=neighbors(k);
-%                 currNode=LIST_OF_MESH_NODE(neighbors(k));
-                if LIST_OF_MESH_NODE(currNeighborUnicast).state==0
+%                 节点处于扫描态,并且未接收时才接收广播包
+                if LIST_OF_MESH_NODE(currNeighborUnicast).state==0&&LIST_OF_MESH_NODE(currNeighborUnicast).accepting==0
                     %state=0  非常关键的一点 ：说明当前节点正在扫描接收数据包，因此，数据包冲突丢失，这里应该给个状态%
+                    startTime=SYSTEM_TIME+channelTime;
+                    event=Event("EVT_ADV_RECV_SUCC",startTime,startTime,advPdu,@eventHandler);
+                    LIST_OF_MESH_NODE(currNeighborUnicast).addEvent(event);
+                    LIST_OF_MESH_NODE(currNeighborUnicast).accepting=1;
+                %节点正在接收，会发生碰撞，丢失数据包%
+                elseif LIST_OF_MESH_NODE(currNeighborUnicast).state==0&&LIST_OF_MESH_NODE(currNeighborUnicast).accepting==1
+                    log=sprintf("time:%ld,node:%d,event:packet collision,boardcast node:%d",SYSTEM_TIME,LIST_OF_MESH_NODE(currNeighborUnicast).unicastAddr,obj.unicastAddr);
+                    Log.print(log);
+                    obj.occurCollision=1;
+                %邻居节点正在广播，由于信道争用，他们的共有邻居节点如果处于扫描接收态，将会碰撞丢包,这种情况在第二种情况中有体现
+                %因此这里仅打印出来，不处理
+                elseif LIST_OF_MESH_NODE(currNeighborUnicast).state==1
+%                     collsionNodeList=intersect(neighbors,LIST_OF_MESH_NODE(currNeighborUnicast).getSelfNeighbor());
+%                     log=sprintf("time:%ld,node:%d,event:neighbor list packet collision,boardcast node:%d,collsion node:%s",SYSTEM_TIME,LIST_OF_MESH_NODE(currNeighborUnicast).unicastAddr,obj.unicastAddr,Helper.vectorToString(collsionNodeList));
+%                     Log.print(log);
                 end
-                LIST_OF_MESH_NODE(currNeighborUnicast).state=0;%更新为扫描接收状态%
-                startTime=SYSTEM_TIME+channelTime;
-                event=Event("EVT_ADV_RECV_SUCC",startTime,startTime,advPdu,@eventHandler);
-                LIST_OF_MESH_NODE(currNeighborUnicast).addEvent(event);
-                REACH_NODE=union(REACH_NODE,currNeighborUnicast);
+                
             end
             
         end
         
         function scanner(obj,advPdu)
-            if(obj.state==1)
-                %数据包碰撞，丢包%
-                return;
-            end
+%             if(obj.state==1)
+%                 %数据包碰撞，丢包%
+%                 return;
+%             end
             ADV_NONCONN_IND=1;
             if(ADV_NONCONN_IND)
                 onNonconnPacketReceivedSuccess(obj,advPdu);
@@ -398,7 +412,7 @@ classdef MeshNode < handle
                     Nc=Nr-Nu;
                     prob=randomRelay(obj,Nc,Nu,Nr);
                     if(rand(1)<=prob)
-%                         obj.state=1;%切换到广播态%
+                         obj.state=1;%切换到广播态%
                         networkPDUSend(obj,relayItem.networkPDU);
                     else
                         log=sprintf("time:%ld,node:%d,event:abandon replay,data:%s",SYSTEM_TIME,obj.unicastAddr,relayItem.networkPDU.toString());
@@ -414,11 +428,19 @@ classdef MeshNode < handle
                     beaconPDUSend(obj,event.data);
                 case 'EVT_ADV_END'
                     obj.state=0;%回到扫描状态%
+                    
 %                     log=sprintf("time:%ld,node:%d,event:EVT_ADV_END",SYSTEM_TIME,obj.unicastAddr);
 %                     Log.print(log);
                 case 'EVT_ADV_RECV_SUCC'
                     %log=sprintf("time:%ld,node:%d,event:EVT_ADV_RECV_SUCC",SYSTEM_TIME,obj.unicastAddr);
                     %Log.print(log);
+                    obj.accepting=0;
+                    if obj.occurCollision==1%接收失败.但是当前接收失败不代表不能接受到正常的数据包。有可能在另一个不冲突的时刻接收成功%
+                        obj.occurCollision=0;
+                        log=sprintf("time:%ld,node:%d,event:packet receive failed,reason:occurCollision",SYSTEM_TIME,obj.unicastAddr);
+                        Log.print(log);
+                        return;
+                    end
                     scanner(obj,event.data);
                 case 'EVT_ONE_HOP_NEIGHBOR_UPDATE_SUCCESS'
                     sendInitBeaconFinished(obj);

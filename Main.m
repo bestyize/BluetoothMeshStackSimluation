@@ -12,11 +12,13 @@ LIST_OF_MESH_NODE=[];
 SYSTEM_TIME=0;
 DEFAULT_RANGE=15;
 REACH_NODE=[];
-SIMULTATION_TIME=10*1000*1000;
+SIMULTATION_TIME=1*1000*1000;%仿真1s%
 NEIGHBOR_UPDATE_TIME_LIST=0:60*1000*1000:SIMULTATION_TIME;
-
+tic;
 main();
+toc;
 
+Log.print("程序运行时间："+toc+"s")
 function main()
     global LIST_OF_MESH_NODE;
     global SYSTEM_TIME;
@@ -25,16 +27,16 @@ function main()
     
     srcId=3;
     dstId=45;
-    packetNum=20;
-    rate=20;%20p/s%
+    packetNum=40;
+    rate=50;%50p/s%
 
     buildNodeList();
     buildOneHopNeighborForEachNode();
     %建立两跳邻居节点关系
     buildTwoHopNeighborForEachNode();
     
-    DrawHelper.drawSrcAndDst(srcId,dstId);
-    pause(1);%先打印节点%
+%     DrawHelper.drawSrcAndDst(srcId,dstId);
+%     pause(1);%先打印节点%
     %printAvgNodeDegree();
     
     simlulationTime=SIMULTATION_TIME;%仿真10秒%
