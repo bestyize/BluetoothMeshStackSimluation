@@ -14,7 +14,7 @@ LIST_OF_MESH_NODE=[];
 SYSTEM_TIME=0;
 DEFAULT_RANGE=15;
 REACH_NODE=[];
-SIMULTATION_TIME=5*1000*1000;%仿真5s%
+SIMULTATION_TIME=10*1000*1000;%最大仿真时间，10s%
 NEIGHBOR_UPDATE_TIME_LIST=0:60*1000*1000:SIMULTATION_TIME;
 EVENT_TIME_HEAD=0;%所有事件中的最%
 
@@ -32,7 +32,7 @@ function main()
     srcId=3;
     dstId=45;
     packetNum=200;
-    rate=50;%50p/s%
+    rate=30;%50p/s%
 
     buildNodeList();
     buildOneHopNeighborForEachNode();
@@ -68,7 +68,7 @@ function main()
             end
             if numel(eventList)>=1
                 eventEmpty=1;
-                nextTime=eventList(1).startTime;
+                nextTime=LIST_OF_MESH_NODE(k).eventList(1).startTime;
                 if temp==timestamp||nextTime<temp
                     temp=nextTime;
                 end
@@ -85,7 +85,7 @@ end
 %根据拓扑创建节点%
 function buildNodeList()
     global LIST_OF_MESH_NODE;
-    nodeMap=TopoHelper.loadTopology();
+    nodeMap=TopoHelper.loadTopology(100);
     nodeCount=size(nodeMap,2);
     for i=1:1:nodeCount
         position=Position(nodeMap(1,i),nodeMap(2,i));

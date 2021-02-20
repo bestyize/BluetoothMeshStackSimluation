@@ -72,11 +72,19 @@ clc;
 % str=strrep(str," ","_")
 
 % floor(rand(1,1)*3)+1
+% 
+% 
+% t=200:200:150
+% 
+% numel(t)
 
+% global DEFAULT_RANGE;
+% DEFAULT_RANGE=15;
 
-t=200:200:150
+% matrix=TopoHelper.createTopologyMatrix(200,100,100);
 
-numel(t)
+matrix=TopoHelper.loadTopology();
+
 
 
 
