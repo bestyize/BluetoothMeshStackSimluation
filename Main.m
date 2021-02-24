@@ -14,7 +14,7 @@ LIST_OF_MESH_NODE=[];
 SYSTEM_TIME=0;
 DEFAULT_RANGE=15;
 REACH_NODE=[];
-SIMULTATION_TIME=10*1000*1000;%最大仿真时间，10s%
+SIMULTATION_TIME=3*1000*1000;%最大仿真时间，10s%
 NEIGHBOR_UPDATE_TIME_LIST=0:60*1000*1000:SIMULTATION_TIME;
 EVENT_TIME_HEAD=0;%所有事件中的最%
 
@@ -32,7 +32,7 @@ function main()
     srcId=3;
     dstId=45;
     packetNum=100;
-    rate=40;%50p/s%
+    rate=40;%40p/s%
     nodeCnt=50;
 
     buildNodeList(nodeCnt);

@@ -18,14 +18,20 @@ classdef TopoHelper < handle
         function [result]=loadTopology(nodeCnt)
             result=[];
             switch (nodeCnt)
+                case 49
+                    result=TopoHelper.loadTopology49();
                 case 50
                     result=TopoHelper.loadTopology50();
                 case 100
                     result=TopoHelper.loadTopology100();
+                case 144
+                    result=TopoHelper.loadTopology144();
                 case 150
                     result=TopoHelper.loadTopology150();
                 case 200
                     result=TopoHelper.loadTopology200();
+                case 225
+                    result=TopoHelper.loadTopology225();
                 otherwise
             end
         end
@@ -49,6 +55,23 @@ classdef TopoHelper < handle
             load("matrix_200_nodes.mat",'-mat');
             result=matrix_200_nodes;
         end
+        
+        
+        function [result]=loadTopology49()
+            load("matrix_49_nodes.mat",'-mat');
+            result=matrix_49_nodes;
+        end
+
+        function [result]=loadTopology144()
+            load("matrix_144_nodes.mat",'-mat');
+            result=matrix_150_nodes;
+        end
+
+        function [result]=loadTopology225()
+            load("matrix_225_nodes.mat",'-mat');
+            result=matrix_225_nodes;
+        end
+        
         function [result]=loadAvgTopology(nodeCnt)
             result=[];
             switch (nodeCnt)
