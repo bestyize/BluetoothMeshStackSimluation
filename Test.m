@@ -144,10 +144,25 @@ clc;
 % clear matrix_avg_14_nodes;
 % save matrix_avg_196_nodes
 
-srcId=1;
-dstId=49;
-nodeCnt=49;
-DrawHelper.drawAvgSrcAndDst(nodeCnt,srcId,dstId);
+% srcId=32;
+% dstId=36;
+% nodeCnt=100;
+% global DEFAULT_RANGE;
+% DEFAULT_RANGE=15;
+% DrawHelper.drawSrcAndDst(nodeCnt,srcId,dstId);
+
+% DEFAULT_RANGE=15;
+% matrix_225_nodes=[];
+% n=225;
+% maxX=100;
+% maxY=100;
+% for k=1:1:n
+%     
+%     pos=Position(round((DEFAULT_RANGE+rand()*(maxX-2*DEFAULT_RANGE))),round((DEFAULT_RANGE+rand()*(maxY-2*DEFAULT_RANGE))));
+%     matrix_225_nodes=[matrix_225_nodes pos];
+% end
+% clear DEFAULT_RANGE n maxX maxY pos k p;
+% matrix_225_nodes
 
 
 
