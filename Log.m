@@ -1,8 +1,8 @@
 classdef Log
     methods(Static)
         function print(logs)
-            logs
-            persistent  fid
+            %logs
+            persistent  fid;
             if(isempty(fid))
                 str=datestr(now,31);
                 str=strrep(str,":","-");

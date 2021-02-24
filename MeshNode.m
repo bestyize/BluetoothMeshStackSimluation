@@ -254,7 +254,9 @@ classdef MeshNode < handle
                 rrd=k*t*log10(N);
             end
             rrd=floor(rrd);%rrd最大值%
-            rrd=unidrnd(rrd)+10;%最终的rrd%。加上10us模拟程序处理时间
+            %rrd=unidrnd(rrd)+10;%最终的rrd%。加上10us模拟程序处理时间
+            rrd=floor(rand(1)*rrd)+10;
+            %rrd=floor(rand(1)*20000)+10;%20ms%
             
         end
         %根据邻居节点的地址寻找邻居节点的邻居节点集合%

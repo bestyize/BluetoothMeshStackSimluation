@@ -22,7 +22,7 @@ tic;
 main();
 toc;
 
-Log.print("程序运行时间："+toc+"s")
+Log.print("程序运行时间："+toc+"s\r\n\r\n")
 function main()
     global LIST_OF_MESH_NODE;
     global SYSTEM_TIME;
@@ -31,17 +31,17 @@ function main()
     
     srcId=3;
     dstId=45;
-    packetNum=200;
-    rate=30;%50p/s%
+    packetNum=100;
+    rate=40;%50p/s%
+    nodeCnt=50;
 
-    buildNodeList();
+    buildNodeList(nodeCnt);
     buildOneHopNeighborForEachNode();
     %建立两跳邻居节点关系
     buildTwoHopNeighborForEachNode();
     
-%     DrawHelper.drawSrcAndDst(srcId,dstId);
-%     pause(1);%先打印节点%
-    %printAvgNodeDegree();
+    DrawHelper.drawSrcAndDst(nodeCnt,srcId,dstId);
+    pause(1);%先打印节点% 
     
     scanChannelSwitchEventHelper(SIMULTATION_TIME);
     
@@ -82,14 +82,25 @@ function main()
     
 end
 
+% %根据拓扑创建节点%
+% function buildNodeList(nodeCnt)
+%     global LIST_OF_MESH_NODE;
+%     nodeMap=TopoHelper.loadTopology(nodeCnt);
+%     nodeCount=size(nodeMap,2);
+%     for i=1:1:nodeCount
+%         position=Position(nodeMap(1,i),nodeMap(2,i));
+%         LIST_OF_MESH_NODE=[LIST_OF_MESH_NODE MeshNode(i,position)];
+%     end
+% end
+
 %根据拓扑创建节点%
-function buildNodeList()
+function buildNodeList(nodeCnt)
     global LIST_OF_MESH_NODE;
-    nodeMap=TopoHelper.loadTopology(100);
-    nodeCount=size(nodeMap,2);
-    for i=1:1:nodeCount
-        position=Position(nodeMap(1,i),nodeMap(2,i));
-        LIST_OF_MESH_NODE=[LIST_OF_MESH_NODE MeshNode(i,position)];
+    nodeMap=TopoHelper.loadTopology(nodeCnt);
+    nodeCount=numel(nodeMap);
+    for k=1:1:nodeCount
+        position=nodeMap(k);
+        LIST_OF_MESH_NODE=[LIST_OF_MESH_NODE MeshNode(k,position)];
     end
 end
 
@@ -114,7 +125,7 @@ end
 
 %把所有要发送的数据包事件都注册在这里%
 function packetSendEventHelper(srcId,dstId,num,rate)
-    if rate>50
+    if rate>60
         Log.print("速率超过允许范围");
         return;
     end
