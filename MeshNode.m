@@ -245,7 +245,7 @@ classdef MeshNode < handle
         
         %随机转发延迟%
         function [rrd]=getRandomRelayDelay(~,coveredCount)
-            k=50;%调整系数%
+            k=70;%调整系数%
             t=376;%微秒%
             N=5;
             if coveredCount<=N
@@ -503,7 +503,7 @@ classdef MeshNode < handle
         %
         function[prob]=randomRelay(~,Nc,Nu,Nr)
             k=8;
-            if Nc<=k
+            if Nc<=k&&Nu~=0
                 prob=1;
             else
                 prob=Nu/Nr;

@@ -10,37 +10,41 @@ global NEIGHBOR_UPDATE_TIME_LIST;
 
 global EVENT_TIME_HEAD;
 
-LIST_OF_MESH_NODE=[];
-SYSTEM_TIME=0;
-DEFAULT_RANGE=15;
-REACH_NODE=[];
-SIMULTATION_TIME=3*1000*1000;%最大仿真时间，10s%
-NEIGHBOR_UPDATE_TIME_LIST=0:60*1000*1000:SIMULTATION_TIME;
-EVENT_TIME_HEAD=0;%所有事件中的最%
+    LIST_OF_MESH_NODE=[];
+    SYSTEM_TIME=0;
+    DEFAULT_RANGE=15;
+    REACH_NODE=[];
+    SIMULTATION_TIME=3*1000*1000;%最大仿真时间，10s%
+    NEIGHBOR_UPDATE_TIME_LIST=0:60*1000*1000:SIMULTATION_TIME;
+    EVENT_TIME_HEAD=0;%所有事件中的最%
 
-tic;
-main();
-toc;
+    tic;
+    main();
+    toc;
 
-Log.print("程序运行时间："+toc+"s\r\n\r\n")
+    Log.print("程序运行时间："+toc+"s\r\n\r\n")
+
+
+
+
 function main()
     global LIST_OF_MESH_NODE;
     global SYSTEM_TIME;
 %     global REACH_NODE;
     global SIMULTATION_TIME;
     
-    srcId=3;
-    dstId=45;
+    srcId=1;
+    dstId=225;
     packetNum=100;
     rate=40;%40p/s%
-    nodeCnt=50;
+    nodeCnt=225;
 
     buildNodeList(nodeCnt);
     buildOneHopNeighborForEachNode();
     %建立两跳邻居节点关系
     buildTwoHopNeighborForEachNode();
     
-    DrawHelper.drawSrcAndDst(nodeCnt,srcId,dstId);
+    DrawHelper.drawAvgSrcAndDst(nodeCnt,srcId,dstId);
     pause(1);%先打印节点% 
     
     scanChannelSwitchEventHelper(SIMULTATION_TIME);
@@ -66,7 +70,7 @@ function main()
                     meshNode.processEventList();%节点自己维护一个事件链表%
                 end
             end
-            if numel(eventList)>=1
+            if numel(LIST_OF_MESH_NODE(k).eventList)>=1
                 eventEmpty=1;
                 nextTime=LIST_OF_MESH_NODE(k).eventList(1).startTime;
                 if temp==timestamp||nextTime<temp
@@ -96,7 +100,7 @@ end
 %根据拓扑创建节点%
 function buildNodeList(nodeCnt)
     global LIST_OF_MESH_NODE;
-    nodeMap=TopoHelper.loadTopology(nodeCnt);
+    nodeMap=TopoHelper.loadAvgTopology(nodeCnt);
     nodeCount=numel(nodeMap);
     for k=1:1:nodeCount
         position=nodeMap(k);
