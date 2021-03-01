@@ -59,11 +59,12 @@ classdef NetworkPDU<handle
             ctlTtlBinary=de2bi(networkPayload(2),8,'left-msb');
             decodeTtl=bi2de(ctlTtlBinary(2:8),'left-msb');
             pdu.ttl=decodeTtl;
-            decodeSeq=networkPayload(5)+networkPayload(4)*256+networkPayload(3)*256*256;
+            %decodeSeq=networkPayload(5)+networkPayload(4)*256+networkPayload(3)*256*256;
+            decodeSeq=uint16(networkPayload(5))+uint16(networkPayload(4))*256+uint16(networkPayload(4))*256*256;
             pdu.seq=decodeSeq;
-            decodeSrc=networkPayload(7)+networkPayload(6)*256;
+            decodeSrc=uint16(networkPayload(7))+uint16(networkPayload(6))*256;
             pdu.src=decodeSrc;
-            decodeDst=networkPayload(9)+networkPayload(8)*256;
+            decodeDst=uint16(networkPayload(9))+uint16(networkPayload(8))*256;
             pdu.dst=decodeDst;
             networkPDU=pdu;
         end

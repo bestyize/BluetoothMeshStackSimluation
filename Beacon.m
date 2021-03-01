@@ -45,8 +45,8 @@ classdef Beacon
         %Beacon decode%
         function [beacon]=decodeBeacon(beaconPayload)
             pdu=Beacon(0,0,0,0,0);
-            pdu.beaconType=beaconPayload(2)+beaconPayload(1)*256;
-            pdu.unicast=beaconPayload(4)+beaconPayload(3)*256;
+            pdu.beaconType=unin16(beaconPayload(2))+uint16(beaconPayload(1))*256;
+            pdu.unicast=uint16(beaconPayload(4))+uint16(beaconPayload(3))*256;
             nCntComp=beaconPayload(5);
             nCntCompBinary=de2bi(nCntComp,8,'left-msb');
             nCnt=bi2de(nCntCompBinary(1:7),'left-msb');
@@ -57,7 +57,7 @@ classdef Beacon
             addressListBinary=beaconPayload(6:nCnt*2+5);
             addressList=zeros(1,nCnt);
             for k=1:1:nCnt
-                addressList(k)=addressListBinary(2*k)+addressListBinary(2*k-1)*256;
+                addressList(k)=uint16(addressListBinary(2*k))+uint16(addressListBinary(2*k-1))*256;
             end
             pdu.nUnicast=addressList;
             beacon=pdu;

@@ -265,9 +265,10 @@ classdef MeshNode < handle
                 neighbor=obj.neighborList(k);
                 if neighbor.advAddr==neighborAdvAddr
                     neighbors=neighbor.neighborList;
-                    break;
+                    return;
                 end
             end
+            neighbors=[];
         end
         
         %本节点的邻居节点集%
@@ -508,6 +509,7 @@ classdef MeshNode < handle
             else
                 prob=Nu/Nr;
             end
+            %prob=1;
         end
         
         %******************************************************%

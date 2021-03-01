@@ -34,13 +34,14 @@ function main()
     global SIMULTATION_TIME;
     
     srcId=1;
-    dstId=225;
+    dstId=400;
     packetNum=100;
     rate=40;%40p/s%
-    nodeCnt=225;
+    nodeCnt=400;
 
     buildNodeList(nodeCnt);
     buildOneHopNeighborForEachNode();
+    %printAvgNeighbor();
     %建立两跳邻居节点关系
     buildTwoHopNeighborForEachNode();
     
@@ -202,6 +203,17 @@ function scanChannelSwitchEventHelper(totalSimluationTime)
         meshNode.registSwitchScanChannelEvent(totalSimluationTime);
     end
     
+end
+
+%打印平均邻居节点度%
+function printAvgNeighbor()
+    global LIST_OF_MESH_NODE;
+    n=numel(LIST_OF_MESH_NODE);
+    total=0;
+    for k=1:1:n
+        total=total+numel(LIST_OF_MESH_NODE(k).neighborList);
+    end
+    total/n
 end
 
 

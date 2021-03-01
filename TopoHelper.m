@@ -79,12 +79,16 @@ classdef TopoHelper < handle
                     result=TopoHelper.loadAvgTopology49();
                 case 100
                     result=TopoHelper.loadAvgTopology100();
+                case 121
+                    result=TopoHelper.loadAvgTopology121();
                 case 144
                     result=TopoHelper.loadAvgTopology144();
                 case 196
                     result=TopoHelper.loadAvgTopology196();
                 case 225
                     result=TopoHelper.loadAvgTopology225();
+                case 400
+                    result=TopoHelper.loadAvgTopology400();
                 otherwise
             end
         end
@@ -98,7 +102,12 @@ classdef TopoHelper < handle
             load("matrix_avg_100_nodes.mat",'-mat');
             result=matrix_avg_100_nodes;
         end
-
+        
+        function [result]=loadAvgTopology121()
+            load("matrix_avg_144_nodes.mat",'-mat');
+            result=matrix_avg_144_nodes;
+        end
+        
         function [result]=loadAvgTopology144()
             load("matrix_avg_144_nodes.mat",'-mat');
             result=matrix_avg_144_nodes;
@@ -112,6 +121,10 @@ classdef TopoHelper < handle
         function [result]=loadAvgTopology225()
             load("matrix_avg_225_nodes.mat",'-mat');
             result=matrix_avg_225_nodes;
+        end 
+        function [result]=loadAvgTopology400()
+            load("matrix_avg_400_nodes.mat",'-mat');
+            result=matrix_avg_400_nodes;
         end 
     end
 end

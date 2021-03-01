@@ -114,16 +114,16 @@ clc;
 % 
 % matrix_100_nodes
 
-% srcId=1;
-% dstId=10;
-% nodeCnt=200;
-% DrawHelper.drawSrcAndDst(nodeCnt,srcId,dstId);
-% 
-% linspace(15,85,10)
-% 
+srcId=1;
+dstId=211;
+nodeCnt=400;
+DrawHelper.drawAvgSrcAndDst(nodeCnt,srcId,dstId);
+
+linspace(15,85,10)
+
 % DEFAULT_RANGE=15;
-% matrix_avg_225_nodes=[];
-% n=225;
+% matrix_avg_400_nodes=[];
+% n=400;
 % maxX=100;
 % maxY=100;
 % x_set=linspace(15,85,sqrt(n));
@@ -132,7 +132,7 @@ clc;
 % for k=1:1:numel(x_set)
 %     for p=1:1:numel(y_set)
 %         pos=Position(x_set(k),y_set(p));
-%         matrix_avg_225_nodes=[matrix_avg_225_nodes pos];
+%         matrix_avg_400_nodes=[matrix_avg_400_nodes pos];
 %     end
 % end
 % 
